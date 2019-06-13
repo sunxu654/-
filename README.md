@@ -26,6 +26,13 @@
     - [3.2.2. 复制（Copying）](#322-%E5%A4%8D%E5%88%B6copying)
     - [3.2.3. 标记-清除（Mark-Sweep）](#323-%E6%A0%87%E8%AE%B0-%E6%B8%85%E9%99%A4mark-sweep)
     - [3.2.4. 标记-整理（Mark-Compact）](#324-%E6%A0%87%E8%AE%B0-%E6%95%B4%E7%90%86mark-compact)
+    - [3.3	分代垃圾收集器](#33-%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.1	串行收集器（Serial）](#331-%E4%B8%B2%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8serial)
+      - [3.3.2	并行收集器（ParNew）](#332-%E5%B9%B6%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8parnew)
+      - [3.3.3	Parallel Scavenge收集器](#333-parallel-scavenge%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.4	Serial Old收集器](#334-serial-old%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.5	Parallel Old收集器](#335-parallel-old%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.6	CMS收集器（Concurrent Mark Sweep）](#336-cms%E6%94%B6%E9%9B%86%E5%99%A8concurrent-mark-sweep)
 
 <!-- /TOC -->
 
@@ -131,3 +138,48 @@ Full GC，指发生在老年代的GC，出现了Full GC一般会伴随着至少�
 此算法结合了“标记-清除”和“复制”两个算法的优点。也是分两阶段，第一阶段从根节点开始标记所有被引用对象，第二阶段遍历整个堆，把清除未标记对象并且把存活对象“压缩”到堆的其中一块，按顺序排放。此算法避免了“标记-清除”的碎片问题，同时也避免了“复制”算法的空间问题。简图如下：
 
 ![](https://i.imgur.com/LLbSfCd.jpg)
+
+### 3.3	分代垃圾收集器
+#### 3.3.1	串行收集器（Serial）
+Serial收集器是Hotspot运行在Client模式下的默认新生代收集器, 它的特点是：只用一个CPU（计算核心）/一条收集线程去完成GC工作, 且在进行垃圾收集时必须暂停其他所有的工作线程(“Stop The World” -后面简称STW)。可以使用-XX:+UseSerialGC打开。
+
+虽然是单线程收集, 但它却简单而高效, 在VM管理内存不大的情况下(收集几十M~一两百M的新生代), 停顿时间完全可以控制在几十毫秒~一百多毫秒内。
+
+![](pic/Snipaste_2019-06-13_15-15-32.jpg)
+#### 3.3.2	并行收集器（ParNew）
+ParNew收集器其实是前面Serial的多线程版本, 除使用多条线程进行GC外, 包括Serial可用的所有控制参数、收集算法、STW、对象分配规则、回收策略等都与Serial完全一样(也是VM启用CMS收集器-XX: +UseConcMarkSweepGC的默认新生代收集器)。
+
+由于存在线程切换的开销, ParNew在单CPU的环境中比不上Serial, 且在通过超线程技术实现的两个CPU的环境中也不能100%保证能超越Serial. 但随着可用的CPU数量的增加, 收集效率肯定也会大大增加(ParNew收集线程数与CPU的数量相同, 因此在CPU数量过大的环境中, 可用-XX:ParallelGCThreads=<N>参数控制GC线程数)。
+
+![](pic/Snipaste_2019-06-13_15-16-39.jpg)
+
+#### 3.3.3	Parallel Scavenge收集器
+与ParNew类似, Parallel Scavenge也是使用复制算法, 也是并行多线程收集器. 但与其他收集器关注尽可能缩短垃圾收集时间不同, Parallel Scavenge更关注系统吞吐量:
+
+系统吞吐量=运行用户代码时间/(运行用户代码时间+垃圾收集时间)
+
+停顿时间越短就越适用于用户交互的程序-良好的响应速度能提升用户的体验;而高吞吐量则适用于后台运算而不需要太多交互的任务-可以最高效率地利用CPU时间,尽快地完成程序的运算任务. Parallel Scavenge提供了如下参数设置系统吞吐量:
+
+![](pic/Snipaste_2019-06-13_15-17-40.jpg)
+#### 3.3.4	Serial Old收集器
+Serial Old是Serial收集器的老年代版本, 同样是单线程收集器,使用“标记-整理”算法
+![](pic/Snipaste_2019-06-13_15-18-22.jpg)
+
+#### 3.3.5	Parallel Old收集器
+Parallel Old是Parallel Scavenge收集器的老年代版本, 使用多线程和“标记－整理”算法, 吞吐量优先, 主要与Parallel Scavenge配合在注重吞吐量及CPU资源敏感系统内使用；
+
+![](pic/Snipaste_2019-06-13_15-18-51.jpg)
+
+#### 3.3.6	CMS收集器（Concurrent Mark Sweep）
+CMS(Concurrent Mark Sweep)收集器是一款具有划时代意义的收集器, 一款真正意义上的并发收集器, 虽然现在已经有了理论意义上表现更好的G1收集器, 但现在主流互联网企业线上选用的仍是CMS(如Taobao、微店).
+CMS是一种以获取最短回收停顿时间为目标的收集器(CMS又称多并发低暂停的收集器), 基于”标记-清除”算法实现, 整个GC过程分为以下4个步骤:
+
+1. 初始标记(CMS initial mark)
+2. 并发标记(CMS concurrent mark: GC Roots Tracing过程)
+3. 重新标记(CMS remark)
+4. 并发清除(CMS concurrent sweep: 已死对象将会就地释放, 注意:此处没有压缩)
+
+
+其中1，3两个步骤(初始标记、重新标记)仍需STW. 但初始标记仅只标记一下GC Roots能直接关联到的对象, 速度很快; 而重新标记则是为了修正并发标记期间因用户程序继续运行而导致标记产生变动的那一部分对象的标记记录, 虽然一般比初始标记阶段稍长, 但要远小于并发标记时间.
+![](pic/Snipaste_2019-06-13_15-19-28.jpg)
+
