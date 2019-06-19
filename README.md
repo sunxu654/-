@@ -1,41 +1,45 @@
 <!-- TOC -->
 
-- [1. JVM优化](#1-jvm%E4%BC%98%E5%8C%96)
-  - [1.1. JVM简单结构图](#11-jvm%E7%AE%80%E5%8D%95%E7%BB%93%E6%9E%84%E5%9B%BE)
+- [1. JVM优化](#1-JVM%E4%BC%98%E5%8C%96)
+  - [1.1. JVM简单结构图](#11-JVM%E7%AE%80%E5%8D%95%E7%BB%93%E6%9E%84%E5%9B%BE)
     - [1.1.1. 类加载子系统与方法区：](#111-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%AD%90%E7%B3%BB%E7%BB%9F%E4%B8%8E%E6%96%B9%E6%B3%95%E5%8C%BA)
-  - [1.2. Java堆](#12-java%E5%A0%86)
+  - [1.2. Java堆](#12-Java%E5%A0%86)
   - [1.3. 直接内存](#13-%E7%9B%B4%E6%8E%A5%E5%86%85%E5%AD%98)
   - [1.4. 垃圾回收系统](#14-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%B3%BB%E7%BB%9F)
-  - [1.5. Java栈](#15-java%E6%A0%88)
+  - [1.5. Java栈](#15-Java%E6%A0%88)
   - [1.6. 本地方法栈](#16-%E6%9C%AC%E5%9C%B0%E6%96%B9%E6%B3%95%E6%A0%88)
-  - [1.7. PC寄存器](#17-pc%E5%AF%84%E5%AD%98%E5%99%A8)
+  - [1.7. PC寄存器](#17-PC%E5%AF%84%E5%AD%98%E5%99%A8)
   - [1.8. 执行引擎](#18-%E6%89%A7%E8%A1%8C%E5%BC%95%E6%93%8E)
 - [2. 堆结构及对象分代](#2-%E5%A0%86%E7%BB%93%E6%9E%84%E5%8F%8A%E5%AF%B9%E8%B1%A1%E5%88%86%E4%BB%A3)
   - [2.1. 什么是分代，分代的必要性是什么](#21-%E4%BB%80%E4%B9%88%E6%98%AF%E5%88%86%E4%BB%A3%E5%88%86%E4%BB%A3%E7%9A%84%E5%BF%85%E8%A6%81%E6%80%A7%E6%98%AF%E4%BB%80%E4%B9%88)
   - [2.2. 分代的划分](#22-%E5%88%86%E4%BB%A3%E7%9A%84%E5%88%92%E5%88%86)
-  - [2.3. 新生代（Young Generation）](#23-%E6%96%B0%E7%94%9F%E4%BB%A3young-generation)
-    - [2.3.1. 老年代（Old Generationn）](#231-%E8%80%81%E5%B9%B4%E4%BB%A3old-generationn)
-    - [2.3.2. 永久代（Permanent Generationn）](#232-%E6%B0%B8%E4%B9%85%E4%BB%A3permanent-generationn)
+  - [2.3. 新生代（Young Generation）](#23-%E6%96%B0%E7%94%9F%E4%BB%A3Young-Generation)
+    - [2.3.1. 老年代（Old Generationn）](#231-%E8%80%81%E5%B9%B4%E4%BB%A3Old-Generationn)
+    - [2.3.2. 永久代（Permanent Generationn）](#232-%E6%B0%B8%E4%B9%85%E4%BB%A3Permanent-Generationn)
 - [3. 垃圾回收算法及分代垃圾收集器](#3-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95%E5%8F%8A%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8)
   - [3.1. 垃圾收集器的分类](#31-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8%E7%9A%84%E5%88%86%E7%B1%BB)
     - [3.1.1. 次收集器](#311-%E6%AC%A1%E6%94%B6%E9%9B%86%E5%99%A8)
     - [3.1.2. 全收集器](#312-%E5%85%A8%E6%94%B6%E9%9B%86%E5%99%A8)
     - [3.1.3. 垃圾回收器的常规匹配](#313-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8%E7%9A%84%E5%B8%B8%E8%A7%84%E5%8C%B9%E9%85%8D)
   - [3.2. 常见垃圾回收算法](#32-%E5%B8%B8%E8%A7%81%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95)
-    - [3.2.1. 引用计数（Reference Counting）](#321-%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0reference-counting)
-    - [3.2.2. 复制（Copying）](#322-%E5%A4%8D%E5%88%B6copying)
-    - [3.2.3. 标记-清除（Mark-Sweep）](#323-%E6%A0%87%E8%AE%B0-%E6%B8%85%E9%99%A4mark-sweep)
-    - [3.2.4. 标记-整理（Mark-Compact）](#324-%E6%A0%87%E8%AE%B0-%E6%95%B4%E7%90%86mark-compact)
+    - [3.2.1. 引用计数（Reference Counting）](#321-%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0Reference-Counting)
+    - [3.2.2. 复制（Copying）](#322-%E5%A4%8D%E5%88%B6Copying)
+    - [3.2.3. 标记-清除（Mark-Sweep）](#323-%E6%A0%87%E8%AE%B0-%E6%B8%85%E9%99%A4Mark-Sweep)
+    - [3.2.4. 标记-整理（Mark-Compact）](#324-%E6%A0%87%E8%AE%B0-%E6%95%B4%E7%90%86Mark-Compact)
     - [3.3	分代垃圾收集器](#33-%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8)
-      - [3.3.1	串行收集器（Serial）](#331-%E4%B8%B2%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8serial)
-      - [3.3.2	并行收集器（ParNew）](#332-%E5%B9%B6%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8parnew)
-      - [3.3.3	Parallel Scavenge收集器](#333-parallel-scavenge%E6%94%B6%E9%9B%86%E5%99%A8)
-      - [3.3.4	Serial Old收集器](#334-serial-old%E6%94%B6%E9%9B%86%E5%99%A8)
-      - [3.3.5	Parallel Old收集器](#335-parallel-old%E6%94%B6%E9%9B%86%E5%99%A8)
-      - [3.3.6	CMS收集器（Concurrent Mark Sweep）](#336-cms%E6%94%B6%E9%9B%86%E5%99%A8concurrent-mark-sweep)
-      - [3.3.7	分区收集- G1收集器](#337-%E5%88%86%E5%8C%BA%E6%94%B6%E9%9B%86--g1%E6%94%B6%E9%9B%86%E5%99%A8)
-  - [4	JVM优化](#4-jvm%E4%BC%98%E5%8C%96)
-    - [4.1	JDK常用JVM优化相关命令](#41-jdk%E5%B8%B8%E7%94%A8jvm%E4%BC%98%E5%8C%96%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4)
+      - [3.3.1	串行收集器（Serial）](#331-%E4%B8%B2%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8Serial)
+      - [3.3.2	并行收集器（ParNew）](#332-%E5%B9%B6%E8%A1%8C%E6%94%B6%E9%9B%86%E5%99%A8ParNew)
+      - [3.3.3	Parallel Scavenge收集器](#333-Parallel-Scavenge%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.4	Serial Old收集器](#334-Serial-Old%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.5	Parallel Old收集器](#335-Parallel-Old%E6%94%B6%E9%9B%86%E5%99%A8)
+      - [3.3.6	CMS收集器（Concurrent Mark Sweep）](#336-CMS%E6%94%B6%E9%9B%86%E5%99%A8Concurrent-Mark-Sweep)
+      - [3.3.7	分区收集- G1收集器](#337-%E5%88%86%E5%8C%BA%E6%94%B6%E9%9B%86--G1%E6%94%B6%E9%9B%86%E5%99%A8)
+  - [4	JVM优化](#4-JVM%E4%BC%98%E5%8C%96)
+    - [4.1	JDK常用JVM优化相关命令](#41-JDK%E5%B8%B8%E7%94%A8JVM%E4%BC%98%E5%8C%96%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4)
+      - [4.1.1	jps](#411-jps)
+      - [4.1.2	jstat](#412-jstat)
+      - [4.1.3	jvisualvm](#413-jvisualvm)
+      - [4.1.4	visualgc插件](#414-visualgc%E6%8F%92%E4%BB%B6)
 
 <!-- /TOC -->
 
@@ -242,5 +246,39 @@ G1老年代GC特点如下:
 ### 4.1	JDK常用JVM优化相关命令
 ![](pic/Snipaste_2019-06-16_20-38-04.jpg)
 
+#### 4.1.1	jps
+jps - l
+显示线程id和执行线程的主类名
+
+jps -v
+显示线程id和执行线程的主类名和JVM配置信息
+#### 4.1.2	jstat
+jstat -参数 线程id 执行时间（单位毫秒） 执行次数
+
+jstat -gc 4488 30 10
+
+![](pic/Snipaste_2019-06-19_22-33-53.jpg)
++  SXC - survivor 初始空间大小，单位字节。
++ SXU - survivor 使用空间大小， 单位字节。
++ EC - eden 初始空间大小
++ EU - eden 使用空间大小
++ OC - old 初始空间大小
++ OU - old 使用空间大小
++ PC - permanent 初始空间大小
++ PU - permanent 使用空间大小
++ YGC - youngGC 收集次数
++ YGCT - youngGC收集使用时长， 单位秒
++ FGC - fullGC收集次数
++ FGCT - fullGC收集使用时长
++ GCT - 总计收集使用总时长 YGCT+FGCT
 
 
+#### 4.1.3	jvisualvm
+一个JDK内置的图形化VM监视管理工具
+
+![](pic/Snipaste_2019-06-19_22-34-41.jpg)
+#### 4.1.4	visualgc插件
+
+![](pic/Snipaste_2019-06-19_22-36-54.jpg)
+
+![](pic/Snipaste_2019-06-19_22-37-16.jpg)
